@@ -509,6 +509,13 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
+  if (argc == 3 && std::strcmp("l",argv[2])) {
+
+    std::cout << "not valid option " << argv[2] <<std::endl;
+    exit(EXIT_FAILURE);
+
+  }
+
   char configFileName[200];
   std::strcpy(configFileName,argv[1]);
 
@@ -560,8 +567,17 @@ int main(int argc, char* argv[]) {
   std::cout<<chain->GetEntries()<<std::endl;      
   //================ Run Analysis
 
-  zlljets_Axe_noSkim tree( chain );
-  tree.loop(configFileName);
+  if (!(argc == 3 && std::strcmp("l",argv[2]))) {
+
+    zlljets_Axe_noSkim_light tree( chain );
+    tree.loop(configFileName);
+
+  } else {
+
+    zlljets_Axe_noSkim tree( chain );
+    tree.loop(configFileName);
+
+  }
   
   delete chain;
   delete chFriend;

@@ -68,16 +68,31 @@ void mask::append(const UInt_t x) {
 
 // }
 
-void mask::countEvents(const UInt_t &eventMask, const Double_t &weight) {
+
+void mask::countEvents(const UInt_t &eventMask) {
    
   //globalMask includes the previous step: once the eventMask doesn't match the globalMask of i-th step, it's useless to continue
   Int_t i = 0;
   Int_t size = this->getMaskSize();
   
   while ( ((eventMask & this->globalMask[i]) == this->globalMask[i]) && i < size) {                //  exploiting bit-bit &
-      this->nEvents[i] += weight;  
-      this->nEventsErr2[i] += weight*weight;
-      i++;      
+    this->nEvents[i] += 1;  
+    this->nEventsErr2[i] += 1;
+    i++;      
+  }
+
+}
+
+void mask::countEvents(const UInt_t &eventMask, const Double_t &weight) {
+   
+  //globalMask includes the previous step: once the eventMask doesn't match the globalMask of i-th step, it's useless to continue
+  Int_t i = 0;
+  Int_t size = this->getMaskSize();
+  
+  while ( ((eventMask & this->globalMask[i]) == this->globalMask[i]) && i < size) {                //  exploiting bit-bit 
+    this->nEvents[i] += weight;  
+    this->nEventsErr2[i] += weight*weight;
+    i++;      
   }
 
 }

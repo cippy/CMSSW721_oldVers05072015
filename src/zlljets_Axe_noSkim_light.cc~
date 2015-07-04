@@ -1,4 +1,4 @@
-#define zlljets_Axe_noSkim_cxx
+#define zlljets_Axe_noSkim_light_cxx
 #include "EmanTreeAnalysis.h"
 //C or C++ header files
 #include <stdio.h>
@@ -39,9 +39,9 @@
 using namespace std;
 using namespace myAnalyzerTEman;
 
-#ifdef zlljets_Axe_noSkim_cxx
+#ifdef zlljets_Axe_noSkim_light_cxx
 
-zlljets_Axe_noSkim::zlljets_Axe_noSkim(TTree *tree) : edimarcoTree_noSkim(tree) {
+zlljets_Axe_noSkim_light::zlljets_Axe_noSkim_light(TTree *tree) : edimarcoTree_noSkim(tree) {
   //cout <<"check in constructor "<<endl;
   Init(tree);
 
@@ -49,7 +49,7 @@ zlljets_Axe_noSkim::zlljets_Axe_noSkim(TTree *tree) : edimarcoTree_noSkim(tree) 
 
 #endif
 
-void zlljets_Axe_noSkim::loop(const char* configFileName)
+void zlljets_Axe_noSkim_light::loop(const char* configFileName)
 {
 
    if (fChain == 0) return;
@@ -222,19 +222,15 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
    Double_t metBinEdges[] = {200., 250., 300., 350., 400., 450., 500., 550., 600., 650., 750., 850., 1000.};
    Int_t nMetBins = (sizeof(metBinEdges)/sizeof(Double_t)) - 1;
 
+   Double_t HTbinEdges[] = {100,200,400,600,50000};
+   Int_t nHTbins = (sizeof(HTbinEdges)/sizeof(Double_t)) - 1;
+
    vector<Double_t> metCut;
    metCut.push_back(250);
    metCut.push_back(300);
    metCut.push_back(350);
    metCut.push_back(400);
    metCut.push_back(500);
-
-   //selection njetsC("njetsC",Form("njets <= %i",NJETS),"pt > 30; |eta| < 4.7");   // using nJet30a
-   //selection njetsEmanC("njetsEmanC","njets","1 or 2 jets, cleaning, pt > 30, |eta| < 2.4");       // using nJet30
-   //selection njetsEmanC("njetsEmanC","njets","1 or 2 jets, cleaning, pt > 30, |eta| < 2.5");       // using nJetClen30
-   //selection jet1ptC("jet1ptC",Form("jet1pt > %4.0lf",(Double_t)J1PT));
-   //selection jet1etaC("jet1etaC",Form("|jet1eta| < %2.1lf",J1ETA));
-   //selection jet2etaC("jet2etaC",Form("|jet2eta| < %2.1lf",J2ETA),Form("only if njets = %i",NJETS));
   
    // selections for monojet selection (it also includes veto on muons or electrons depending on the sample
    selection jet1C("jet1C",Form("jet1pt > %4.0lf",(Double_t)J1PT),Form("nJetClean >= 1 && JetClean1_pt > %4.0lf && abs(JetClean1_eta) < %1.1lf && jetclean1 > 0.5",(Double_t)J1PT,J1ETA));
@@ -303,9 +299,9 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
 
    if (fabs(LEP_PDG_ID) == 13) {  // if we have Z -> mumu do stuff...
      
-     strcpy(ROOT_FNAME,"zmumujets_Axe_noSkim.root");
-     strcpy(TXT_FNAME,"zmumujets_Axe_noSkim.txt");
-     strcpy(TEX_FNAME,"zmumujets_Axe_noSkim.tex");
+     strcpy(ROOT_FNAME,"zmumujets_Axe_noSkim_light.root");
+     strcpy(TXT_FNAME,"zmumujets_Axe_noSkim_light.txt");
+     strcpy(TEX_FNAME,"zmumujets_Axe_noSkim_light.tex");
      strcpy(FLAVOUR,"mu");
      strcpy(LL_FLAVOUR,"mumu");
      strcpy(CONTROL_SAMPLE,"Z-->mumu");
@@ -335,9 +331,9 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
 
    } else if (fabs(LEP_PDG_ID) == 11) {   // if we have Z -> ee do different stuff...
 
-     strcpy(ROOT_FNAME,"zeejets_Axe_noSkim.root");
-     strcpy(TXT_FNAME,"zeejets_Axe_noSkim.txt");
-     strcpy(TEX_FNAME,"zeejets_Axe_noSkim.tex");
+     strcpy(ROOT_FNAME,"zeejets_Axe_noSkim_light.root");
+     strcpy(TXT_FNAME,"zeejets_Axe_noSkim_light.txt");
+     strcpy(TEX_FNAME,"zeejets_Axe_noSkim_light.tex");
      strcpy(FLAVOUR,"ele");
      strcpy(LL_FLAVOUR,"ee");
      strcpy(CONTROL_SAMPLE,"Z-->ee");
@@ -379,98 +375,6 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
 
    if ( TAU_VETO_FLAG ) maskMonoJetSelection += tauLooseVetoC.get2ToId();
 
-   UInt_t maskTightTag;   // holds cuts for lepton tight selection, which is different between muons and electrons
-
-   mask zlljetsControlSample(Form("%s control sample with selection flow as Emanuele's",CONTROL_SAMPLE));
-
-   mask zlljetsControlSampleGenLep(Form("%s control sample (%s gen ) with selection flow as Emanuele's",CONTROL_SAMPLE,FLAVOUR));
-   zlljetsControlSampleGenLep.append(genLepC.get2ToId());
-
-   mask tautaubkgInZll(Form("tau tau background in %s control sample",CONTROL_SAMPLE));
-   tautaubkgInZll.append(genTausC.get2ToId());
-
-   if (HLT_FLAG) {
-
-     zlljetsControlSample.append(HLTlepC.get2ToId());
-     zlljetsControlSampleGenLep.append(HLTlepC.get2ToId());
-     tautaubkgInZll.append(HLTlepC.get2ToId());
-
-   }
-
-   if (fabs(LEP_PDG_ID) == 13) {  
-
-     maskTightTag = lep1tightIdIso04C.get2ToId();  // for now tight requirements on pt and eta are already included in the loose condition because they coincide (not true for electrons)
-   
-     zlljetsControlSample.append(metNoLep200C.get2ToId());
-     zlljetsControlSample.append(twoLepLooseC.get2ToId() + oppChargeLeptonsC.get2ToId());
-     zlljetsControlSample.append(twoLeptonsC.get2ToId());
-     zlljetsControlSample.append(maskTightTag);
-     zlljetsControlSample.append(invMassC.get2ToId());
-         
-     zlljetsControlSampleGenLep.append(metNoLep200C.get2ToId());
-     zlljetsControlSampleGenLep.append(twoLepLooseC.get2ToId() + oppChargeLeptonsC.get2ToId());
-     zlljetsControlSampleGenLep.append(twoLeptonsC.get2ToId());
-     zlljetsControlSampleGenLep.append(maskTightTag); 
-     zlljetsControlSampleGenLep.append(invMassC.get2ToId());
-   
-     tautaubkgInZll.append(metNoLep200C.get2ToId());
-     tautaubkgInZll.append(twoLepLooseC.get2ToId() + oppChargeLeptonsC.get2ToId());
-     tautaubkgInZll.append(twoLeptonsC.get2ToId());
-     tautaubkgInZll.append(maskTightTag);
-     tautaubkgInZll.append(invMassC.get2ToId());
-
-   } else if (fabs(LEP_PDG_ID) == 11) {  
-
-     maskTightTag = lep1tightIdIso04C.get2ToId() + lep2tightIdIso04C.get2ToId() + lep1ptC.get2ToId() + lep2ptC.get2ToId() + lep1etaC.get2ToId() + lep2etaC.get2ToId();
-
-     zlljetsControlSample.append(metNoLep200C.get2ToId());
-     zlljetsControlSample.append(oppChargeLeptonsC.get2ToId()); // skip loose requirement because I wil ask the tight one for both
-     zlljetsControlSample.append(twoLeptonsC.get2ToId());
-     zlljetsControlSample.append(maskTightTag);
-     zlljetsControlSample.append(invMassC.get2ToId());
-       
-     zlljetsControlSampleGenLep.append(metNoLep200C.get2ToId());
-     zlljetsControlSampleGenLep.append(oppChargeLeptonsC.get2ToId());
-     zlljetsControlSampleGenLep.append(twoLeptonsC.get2ToId());
-     zlljetsControlSampleGenLep.append(maskTightTag);
-     zlljetsControlSampleGenLep.append(invMassC.get2ToId());
-   
-     tautaubkgInZll.append(metNoLep200C.get2ToId());
-     tautaubkgInZll.append(oppChargeLeptonsC.get2ToId());
-     tautaubkgInZll.append(twoLeptonsC.get2ToId());
-     tautaubkgInZll.append(maskTightTag);
-     tautaubkgInZll.append(invMassC.get2ToId());
-
-   }
- 
-   zlljetsControlSample.append(jet1C.get2ToId());
-   zlljetsControlSample.append(jjdphiC.get2ToId());
-   zlljetsControlSample.append(njetsC.get2ToId());
-   zlljetsControlSample.append(lepLooseVetoC.get2ToId());
-   zlljetsControlSample.append(gammaLooseVetoC.get2ToId());
-   
-   zlljetsControlSampleGenLep.append(jet1C.get2ToId());
-   zlljetsControlSampleGenLep.append(jjdphiC.get2ToId());
-   zlljetsControlSampleGenLep.append(njetsC.get2ToId());
-   zlljetsControlSampleGenLep.append(lepLooseVetoC.get2ToId());
-   zlljetsControlSampleGenLep.append(gammaLooseVetoC.get2ToId());
-
-   if (TAU_VETO_FLAG) {
-     zlljetsControlSample.append(tauLooseVetoC.get2ToId());
-     zlljetsControlSampleGenLep.append(tauLooseVetoC.get2ToId());
-   }
-
-   tautaubkgInZll.append(jet1C.get2ToId());
-   tautaubkgInZll.append(jjdphiC.get2ToId());
-   tautaubkgInZll.append(njetsC.get2ToId());
-   tautaubkgInZll.append(lepLooseVetoC.get2ToId());
-   tautaubkgInZll.append(gammaLooseVetoC.get2ToId());
-
-   mask resoAndResponse;
-   resoAndResponse.append(HLTlepC.get2ToId());
-   resoAndResponse.append(oppChargeLeptonsC.get2ToId() + twoLeptonsC.get2ToId());  // maybe it would be better to ask for 2 loose leptons
-   resoAndResponse.append(invMassC.get2ToId());
-
    mask *lep_acc_eff[nMetBins];
    for ( Int_t i = 0; i < nMetBins; i++) {
      lep_acc_eff[i] = new mask;
@@ -479,6 +383,18 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      lep_acc_eff[i]->append(maskMonoJetSelection);
      lep_acc_eff[i]->append(acceptanceC.get2ToId());
      lep_acc_eff[i]->append(efficiencyC.get2ToId());
+   }
+
+   mask *lep_acc_eff_ht[nMetBins][nHTbins];
+   for ( Int_t i = 0; i < nMetBins; i++) {
+     for (Int_t j = 0; j < nHTbins; j++ ) {
+       lep_acc_eff_ht[i][j] = new mask;
+       lep_acc_eff_ht[i][j]->setName(Form("%s_acc_eff:  %3.0lf < met < %3.0lf;  %3.0lf < ht < %3.0lf",FLAVOUR,metBinEdges[i], metBinEdges[i+1], HTbinEdges[j], HTbinEdges[j+1]));
+       lep_acc_eff_ht[i][j]->append(genLepC.get2ToId());
+       lep_acc_eff_ht[i][j]->append(maskMonoJetSelection);
+       lep_acc_eff_ht[i][j]->append(acceptanceC.get2ToId());
+       lep_acc_eff_ht[i][j]->append(efficiencyC.get2ToId());
+     }
    }
 
    cout << "Opening file " <<ROOT_FNAME<< endl;
@@ -498,86 +414,20 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
    TH1::StatOverflows();                 //enable use of underflows and overflows for statistics computation 
    TVirtualFitter::SetDefaultFitter("Minuit");
 
-   //Int_t Hcolor[] = {1,2,3,4,5,6,7,8,9,12,18,30,38,41,42,46,47,49};       
-
-   TH1D *HzlljetsYieldsMetBin = new TH1D("HzlljetsYieldsMetBin",Form("yields of %s control sample in bins of met;#slash{E}_{T};# of events",
-								     CONTROL_SAMPLE),nMetBins,metBinEdges);
-   TH1D *HzlljetsYieldsMetBinGenLep = new TH1D("HzlljetsYieldsMetBinGenLep",Form("yields of %s control sample (%s gen) in bins of met; #slash{E}_{T};# of events",CONTROL_SAMPLE,CONTROL_SAMPLE),nMetBins,metBinEdges);
-   TH1D *HzlljetsYieldsMetBinGenTau = new TH1D("HzlljetsYieldsMetBinGenTau",Form("yields of %s control sample (Z->#tau#tau gen) in bins of met; #slash{E}_{T};# of events",CONTROL_SAMPLE),nMetBins,metBinEdges);
-   TH1D *HzvvEstimate = new TH1D("HzvvEstimate",Form("yields of Z->#nu#nu estimated as N(%s) * BR_ratio / (A*#varepsilon)",CONTROL_SAMPLE),nMetBins,metBinEdges);
-
-   TH1D *HZtoLLRecoPt = new TH1D("HZtoLLRecoPt","",101,0.,1010);
-   TH1D *HZtoLLGenPt = new TH1D("HZtoLLGenPt","",101,0.,1010);
-   // this is the histogram with reco/gen
-   TH1D *HZtoLLPt_RecoGenRatio = new TH1D("HZtoLLPt_RecoGenRatio","",101,0.,1010.);
-   // histogram of reco/gen distribution function
-   TH1D *HZtoLLPt_RecoGenRatio_pdf = new TH1D("HZtoLLPt_RecoGenRatio_pdf","",100,0.,2.);
-
    TH1D* Hacc = new TH1D("Hacc","",nMetBins,metBinEdges);
    TH1D* Heff = new TH1D("Heff","",nMetBins,metBinEdges);
    TH1D* Hacceff = new TH1D("Hacceff","",nMetBins,metBinEdges);
 
-   TH1D *HinvMass[nMetBins];
-   TH1D *HzlljetsInvMassMetBinGenLep[nMetBins];
-   TH1D *HzlljetsInvMassMetBinGenTau[nMetBins];
-   TH1D *HZtoLLRecoPt_MetBin[nMetBins];
-   TH1D *HZtoLLGenPt_MetBin[nMetBins];
-   TH1D *HZtoLLPt_RecoGenRatio_MetBin[nMetBins];
-   TH1D *HZtoLLPt_RecoGenRatio_pdf_MetBin[nMetBins];
-
-   for (Int_t i = 0; i < nMetBins; i++) {
-
-     HinvMass[i] = new TH1D(Form("HinvMass_met%2.0lfTo%2.0lf",metBinEdges[i],metBinEdges[i+1]),"",30,DILEPMASS_LOW,DILEPMASS_UP);
-     HzlljetsInvMassMetBinGenLep[i] = new TH1D(Form("HzlljetsInvMassMetBinGenLep_met%2.0lfTo%2.0lf",metBinEdges[i],metBinEdges[i+1]),"",30,DILEPMASS_LOW,DILEPMASS_UP);
-     HzlljetsInvMassMetBinGenTau[i] = new TH1D(Form("HzlljetsInvMassMetBinGenTau_met%2.0lfTo%2.0lf",metBinEdges[i],metBinEdges[i+1]),"",30,DILEPMASS_LOW,DILEPMASS_UP);
-     HZtoLLRecoPt_MetBin[i] = new TH1D(Form("HZtoLLRecoPt_MetBin_met%2.0lfTo%2.0lf",metBinEdges[i],metBinEdges[i+1]),"",101,0.,1010.);
-     HZtoLLGenPt_MetBin[i] = new TH1D(Form("HZtoLLGenPt_MetBin_met%2.0lfTo%2.0lf",metBinEdges[i],metBinEdges[i+1]),"",101,0.,1010.);
-     HZtoLLPt_RecoGenRatio_MetBin[i] = new TH1D(Form("HZtoLLPt_RecoGenRatio_MetBin_met%2.0lfTo%2.0lf",metBinEdges[i],metBinEdges[i+1]),"",101,0.,1010.);
-     HZtoLLPt_RecoGenRatio_pdf_MetBin[i] = new TH1D(Form("HZtoLLPt_RecoGenRatio_pdf_MetBin_met%2.0lfTo%2.0lf",metBinEdges[i],metBinEdges[i+1]),"",100,0.,2.);
-
-   } 
-
-   TH1D *H_uPerp_VS_Nvtx[NVTXS];
-   TH1D *H_uPar_VS_Nvtx[NVTXS]; 
-   TH1D *H_uPar_VS_Nvtx_lowZpT[NVTXS];
- 
-   for (Int_t i = 0; i < NVTXS; i++) {
-
-     H_uPerp_VS_Nvtx[i] = new TH1D(Form("H_uPerp_VS_Nvtx_nvtx%i",FIRST_NVTX+i),"",80,-200,200);  // 5 GeV bins 
-     H_uPar_VS_Nvtx[i] = new TH1D(Form("H_uPar_VS_Nvtx_nvtx%i",FIRST_NVTX+i),"ZpT in [250,500]GeV",80,-200,200);  // 5 GeV bins
-     H_uPar_VS_Nvtx_lowZpT[i] = new TH1D(Form("H_uPar_VS_Nvtx_lowZpT_nvtx%i",FIRST_NVTX+i),"ZpT in [50,250]GeV",80,-200,200);  // 5 GeV bins
-
+   TH1D *Hacc_noW_HTbin[nHTbins];
+   TH1D *Heff_noW_HTbin[nHTbins];
+   TH1D *Hacceff_noW_HTbin[nHTbins];
+   for (Int_t i = 0; i < nHTbins; i+) {
+     Hacc_noW_HTbin[i] = new TH1D(Form("Hacc_noW_HTbin%3.0lfto%3.0lf",HTbinEdges[i],HTbinEdges[i+1]),"",nMetBins,metBinEdges);
+     Heff_noW_HTbin[i] = new TH1D(Form("Heff_noW_HTbin%3.0lfto%3.0lf",HTbinEdges[i],HTbinEdges[i+1]),"",nMetBins,metBinEdges);
+     Hacceff_noW_HTbin[i] = new TH1D(Form("Hacceff_noW_HTbin%3.0lfto%3.0lf",HTbinEdges[i],HTbinEdges[i+1]),"",nMetBins,metBinEdges);
    }
 
-   // zpt bin edges for respose studies (which are independent on the CS selection, they are done on the whole sample)
-   //Double_t ZptBinEdges[] = {250., 260., 270., 280., 290., 310., 330., 350., 370., 390., 410., 430., 450., 470., 500., 530., 560, 600., 640., 700., 800.};
-   //Double_t ZptBinEdges[] = {250., 260., 270., 280., 290., 310., 330., 350., 370., 400., 430., 460., 490., 530., 570, 610., 650., 700., 800.};
-   Double_t ZptBinEdges[] = {50., 60., 70., 80., 90., 100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280., 290., 310., 330., 350., 370., 400., 430., 460., 490., 530., 570, 610., 650., 700., 800.};
-   Int_t nBinsForResponse = sizeof(ZptBinEdges)/sizeof(Double_t) - 1;  //number of bins is n-1 where n is the number of ZptBinEdges's elements
-
-   TH1D *H_uPerp_VS_ZpT[nBinsForResponse];  
-   TH1D *H_uPar_VS_ZpT[nBinsForResponse]; 
-   TH1D *H_uPar_ZpT_ratio[nBinsForResponse];  // for the response curve
-   TH1D *HZptBinned[nBinsForResponse];
-   //the following histograms will give the distribution of met|| / wzpt. The mean value will be used to create the response curve, that is (<met|| / wzpt>) vs wzpt
-   // for each point, wzpt will be taken as the average wzpt in the range considered
- 
-   for (Int_t i = 0; i < nBinsForResponse; i++) {   
-
-     //HZptBinned[i] are histograms with 5 bins in the range given by ZptBinEdges[i] and ZptBinEdges[i+1]
-     // the mean wzpt in each bin will be computed as the histogram's mean
-     HZptBinned[i] = new TH1D(Form("HZptBinned_ZpT%2.0lfTo%2.0lf",ZptBinEdges[i],ZptBinEdges[i+1]),"",5,ZptBinEdges[i],ZptBinEdges[i+1]); 
-     H_uPar_ZpT_ratio[i] = new TH1D(Form("H_uPar_ZpT_ratio_ZpT%2.0lfTo%2.0lf",ZptBinEdges[i],ZptBinEdges[i+1]),"",50,0.0,2.0); 
-     H_uPerp_VS_ZpT[i] = new TH1D(Form("H_uPerp_VS_ZpT_ZpT%2.0lfTo%2.0lf",ZptBinEdges[i],ZptBinEdges[i+1]),"",40,-200,200); 
-     H_uPar_VS_ZpT[i] = new TH1D(Form("H_uPar_VS_ZpT_ZpT%2.0lfTo%2.0lf",ZptBinEdges[i],ZptBinEdges[i+1]),"",40,-200,200); 
-
-   }
-
-   Double_t HTbin[] = {100,200,400,600,100000};
-   TH1D *H_AccTimesEff_noW_HTbin[3];
-   for (Int_t i = 0; i < 3; i++) {
-     H_AccTimesEff_noW_HTbin[i] = new TH1D(Form("H_AccTimesEff_noW_HTbin%3.0lfto%3.0lf",HTbin[i],HTbin[i+1]),"",nMetBins,metBinEdges);
-   }
+   
 
    // saving histograms with bin edges of other histograms used (e.g. content of metBinEdges array ...)
    TH1D *HmetBinEdges = new TH1D("HmetBinEdges","bin edges for met distributions",nMetBins+1,0.0,nMetBins+1);
@@ -585,18 +435,8 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      HmetBinEdges->SetBinContent(i+1,metBinEdges[i]);
    }
 
-   TH1D *HZptBinEdges = new TH1D("HZptBinEdges","bin edges for ZpT distributions",nBinsForResponse+1,0.0,nBinsForResponse+1);
-   for (Int_t i = 0; i <= nBinsForResponse; i++) {
-     HZptBinEdges->SetBinContent(i+1,ZptBinEdges[i]);
-   }
-
-   TH1D *Hnvtx = new TH1D("Hnvtx","# of vertices for studies of variables as a function of nvtx",NVTXS,0.0,NVTXS);
-   for (Int_t i = 0; i < NVTXS; i++) {              // watch out: differently from above, i < NVTXS, not <=, because if NVTXS = 3 I need 3 points, not 4
-     Hnvtx->SetBinContent(i+1,FIRST_NVTX+i);
-   }
-
    Long64_t nentries = fChain->GetEntriesFast();
-   cout<<"zlljets_Axe_noSkim::loop()"<<endl;
+   cout<<"zlljets_Axe_noSkim_light::loop()"<<endl;
    cout<<"nentries = "<<nentries<<endl;   
 
    Long64_t nbytes = 0, nb = 0;
@@ -613,6 +453,17 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      UInt_t eventMask = 0; 
      Double_t newwgt = weight * LUMI;
 
+     Double_t currentWeight;
+     Int_t htbin;
+     if (jentry == 0) {
+       currentWeight = weight;
+       htbin = 0;
+     }
+     if (currentWeight != weight) {  // when weight changes, it means we are entering new HT bin ( weights are the same within the same HT bin
+       currentWeight = weight;
+       htbin++;
+     }
+
      nTotalWeightedEvents += newwgt;  // counting events with weights
 
      nLepLoose = *ptr_nLepLoose;          
@@ -624,14 +475,12 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      l2gen.SetPtEtaPhiM(GenPart_pt[secondIndexGen],GenPart_eta[secondIndexGen],GenPart_phi[secondIndexGen],GenPart_mass[secondIndexGen]);
      Zgen = l1gen + l2gen;
      Double_t ZgenMass = Zgen.Mag(); 
-     Double_t ZtoLLGenPt = Zgen.Pt();    // could do Double_t ZtoLLGenPt = GenPart_pt[Z_index];
      Z_index = GenPart_motherIndex[firstIndexGen];   //could do Z_index = myGetPartIndex(23, nGenPart, GenPart_pdgId);  
      
      recoLepFound_flag = myGetPairIndexInArray(LEP_PDG_ID, nLepGood, LepGood_pdgId, firstIndex, secondIndex);       
      l1reco.SetPtEtaPhiM(LepGood_pt[firstIndex],LepGood_eta[firstIndex],LepGood_phi[firstIndex],LepGood_mass[firstIndex]);
      l2reco.SetPtEtaPhiM(LepGood_pt[secondIndex],LepGood_eta[secondIndex],LepGood_phi[secondIndex],LepGood_mass[secondIndex]);
      Zreco = l1reco + l2reco;
-     Double_t ZtoLLRecoPt = Zreco.Pt();
 
      if (fabs(LEP_PDG_ID) == 13) { 
 
@@ -640,13 +489,6 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
        metNoLepPhi = *ptr_metNoLepPhi; 
        metNoLepTV3.SetPtEtaPhi(metNoLepPt,metNoLepEta,metNoLepPhi);   // will use this 3D vector below
 
-       if ( HLT_FLAG ) {
-
-	 if ( metNoLepPt > METNOLEP_START ) HLT_passed_flag = 1; 	 
-	 else HLT_passed_flag = 0;
-
-       }  // end of   if ( HLT_FLAG )
-
        if ( genLepFound_flag && (GenPart_pt[firstIndexGen] > GENLEP1PT) && (GenPart_pt[secondIndexGen] > GENLEP2PT) && ( fabs(GenPart_eta[firstIndexGen]) < GENLEP1ETA) && ( fabs(GenPart_eta[secondIndexGen]) < GENLEP2ETA) && (ZgenMass > GEN_ZMASS_LOW) && (ZgenMass < GEN_ZMASS_UP) )  acceptanceSelectionDef = 1;
        else acceptanceSelectionDef = 0;
 
@@ -654,15 +496,6 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
        else efficiencySelectionDef = 0;
 
      } else if (fabs(LEP_PDG_ID) == 11) { 
- 
-       if ( HLT_FLAG ) {
-
-	 if ( recoLepFound_flag && (LepGood_tightId[firstIndex] == 1) && (LepGood_tightId[secondIndex] == 1) && 
-	      (fabs(LepGood_eta[firstIndex]) < HLT_LEP1ETA) && (fabs(LepGood_eta[secondIndex]) < HLT_LEP2ETA) && 
-	      (LepGood_pt[secondIndex] > HLT_LEP1PT) && (LepGood_pt[secondIndex] > HLT_LEP2PT) ) HLT_passed_flag = 1; 	 
-	 else HLT_passed_flag = 0;
-
-       }  // end of   if ( HLT_FLAG )
 
        met.SetPtEtaPhi(met_pt,met_eta,met_phi);
        eleVectorSum.SetPtEtaPhi(0.0,0.0,0.0);   // for each event it must be initialized to 0
@@ -704,7 +537,7 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      eventMask += tauLooseVetoC.addToMask(nTauClean18V == 0);
      eventMask += gammaLooseVetoC.addToMask(nGamma15V == 0);
      eventMask += metNoLep200C.addToMask(metNoLepPt > METNOLEP_START);
-     eventMask += HLTlepC.addToMask(HLT_passed_flag);     
+     //eventMask += HLTlepC.addToMask(HLT_passed_flag);  don't need it now for Axe    
 
      for (Int_t i = 0; i <  metCut.size(); i++) {
        eventMask += metNoLepC[i].addToMask(metNoLepPt > metCut[i]);
@@ -731,286 +564,20 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      }
 
      // end of eventMask building
+     // now entering analysis in bins of met
 
+     if ((metNoLepPt > metBinEdges[0]) && (metNoLepPt < metBinEdges[nMetBins])) {
 
-       // this part, for electrons, is done only if trigger is passed
-       // nTotalWeightedEvents counts the number of events passing trigger selection, if any
-
-       zlljetsControlSample.countEvents(eventMask,newwgt);
-       zlljetsControlSampleGenLep.countEvents(eventMask,newwgt);
-       tautaubkgInZll.countEvents(eventMask, newwgt);
-       resoAndResponse.countEvents(eventMask, newwgt);
-
-       // filling histogram with yields and invariant mass at the end of the selection in bins of met
-       if ( ((eventMask & zlljetsControlSample.globalMask.back()) == zlljetsControlSample.globalMask.back()) ) {  
-	 // this histogram holds the final yields in bins of MET
-	 HzlljetsYieldsMetBin->Fill(metNoLepPt,newwgt);    
-       }
-
-       if ( ((eventMask & zlljetsControlSampleGenLep.globalMask.back()) == zlljetsControlSampleGenLep.globalMask.back()) ) {
-
-	 // this histogram holds the final yields in bins of MET
-	 HzlljetsYieldsMetBinGenLep->Fill(metNoLepPt,newwgt);
-
-	 //enter this part if 2 OS/SF leptons were found among gen and reco particles. Now checking compatibilities between pairs
-	 // e.g. l1gen = e+, l2gen = e- ; l1reco = e+, l2reco = e- (but the charge order might not coincide)
-	 // now we require a DeltaR cut between them to assess that lreco comes from lgen
-	 // since 2 OS/SF were found to get inside here, if !(l1gen->l1reco && l2gen->l2reco) then for sure l1gen->l2reco && l2gen->l1reco
-	   
-	 Double_t DeltaR_lreco_lgen_pair1 = 0.0;
-	 Double_t DeltaR_lreco_lgen_pair2 = 0.0;
-
-	 if(LepGood_pdgId[firstIndex] == GenPart_pdgId[firstIndexGen] && LepGood_pdgId[secondIndex] == GenPart_pdgId[secondIndexGen]) {
-
-	   DeltaR_lreco_lgen_pair1 = l1reco.DeltaR(l1gen);
-	   DeltaR_lreco_lgen_pair2 = l2reco.DeltaR(l2gen);
-
-	 } else {
-	    
-	   DeltaR_lreco_lgen_pair1 = l1reco.DeltaR(l2gen);
-	   DeltaR_lreco_lgen_pair2 = l2reco.DeltaR(l1gen);
-
-	 }
-
-	 if (DeltaR_lreco_lgen_pair1 < 0.1 && DeltaR_lreco_lgen_pair2 < 0.1) {
-	     
-	   HZtoLLRecoPt->Fill(ZtoLLRecoPt,newwgt);
-	   HZtoLLGenPt->Fill(ZtoLLGenPt,newwgt);
-	   if (ZtoLLGenPt != 0) HZtoLLPt_RecoGenRatio_pdf->Fill(ZtoLLRecoPt/ZtoLLGenPt,newwgt);
-
-	 }	 
-
-       }
-
-       if ( ((eventMask & tautaubkgInZll.globalMask.back()) == tautaubkgInZll.globalMask.back()) ) {  
-	 // this histogram holds the final yields in bins of MET
-	 HzlljetsYieldsMetBinGenTau->Fill(metNoLepPt,newwgt);  
-       }
-
-       if ( ((eventMask & resoAndResponse.globalMask.back()) == resoAndResponse.globalMask.back()) ) {  
-	   
-	 // following is done if two OS leptons are found (otherwise there would be no Z)
-	 // moreover, if we have electron, trigger selection must be passed 
-	 //metNoLepPt cut is also included: it's part of the trigger for muons and we also apply it to electrons for consistency
-		
-	 //metNoLepTV3.SetPtEtaPhi((Double_t)metNoLepPt,(Double_t)metNoLepEta,(Double_t)metNoLepPhi);  // already initialized above
-	 Double_t dphiMetNoLepZ = metNoLepTV3.DeltaPhi(Zreco.Vect());
-
-	 Double_t u_par = metNoLepPt * TMath::Cos(dphiMetNoLepZ);
-	 Double_t u_perp = metNoLepPt * TMath::Sin(dphiMetNoLepZ);
-
-	 if (ZtoLLRecoPt > ZptBinEdges[0]) {  
-
-	   Int_t nvtxBin = nVert - FIRST_NVTX;
-	   Int_t lastnvtx = NVTXS + FIRST_NVTX;
-
-	   Double_t uparMinusZrecoPt = u_par - ZtoLLRecoPt;
-
-	   if ((nvtxBin >= 0) && (nVert < lastnvtx)) {
-
-	     H_uPerp_VS_Nvtx[nvtxBin]->Fill(u_perp,newwgt);
-	     
-	     if (ZtoLLRecoPt < 250 ) {
-
-	       H_uPar_VS_Nvtx_lowZpT[nvtxBin]->Fill(uparMinusZrecoPt,newwgt);
-	     
-	     } else if (ZtoLLRecoPt < 500) {                       // (met||-wzpt) distribution's width depends on Zpt, thus I use this range
-
-	       H_uPar_VS_Nvtx[nvtxBin]->Fill(uparMinusZrecoPt,newwgt);
+       Int_t bin = myGetBin(metNoLepPt,metBinEdges,nMetBins);
+       lep_acc_eff[bin]->countEvents(eventMask,newwgt);       
+       lep_acc_eff[bin][htbin]->countEvents(eventMask);
 	 
-	     }       
-    
-	   }  // end of   if ((nvtxBin >= 0) && (nVert < lastnvtx))
-
-	   /**************************************************/
-	   // computing met responses
-	   /**************************************************/
-
-	   // first of all I make sure that wzpt is in the appropriate range
-	   if ( ZtoLLRecoPt < ZptBinEdges[nBinsForResponse] ) {
-
-	     Int_t respBin = myGetBin(ZtoLLRecoPt,ZptBinEdges,nBinsForResponse);
-	     //cout<<"bin = "<<bin<<endl;
-	     HZptBinned[respBin]->Fill(ZtoLLRecoPt,newwgt);        
-	     H_uPar_ZpT_ratio[respBin]->Fill(u_par/ZtoLLRecoPt,newwgt);     //the mean value of this histogram is the response
-	     H_uPerp_VS_ZpT[respBin]->Fill(u_perp,newwgt);
-	     H_uPar_VS_ZpT[respBin]->Fill(uparMinusZrecoPt,newwgt);
- 
-	   }
-
-	 }            // end of if (ZtoLLRecoPt > ZptBinEdges[0])
-
-       }
-	
-
-       // now entering analysis in bins of met
-
-       if ((metNoLepPt > metBinEdges[0]) && (metNoLepPt < metBinEdges[nMetBins])) {
-
-	 Int_t bin = myGetBin(metNoLepPt,metBinEdges,nMetBins);
-	 lep_acc_eff[bin]->countEvents(eventMask,newwgt);
-       
-	 if ((eventMask & zlljetsControlSample.globalMask.back()) == zlljetsControlSample.globalMask.back()) {
-	   // this histogram holds the invariant mass distribution (one for each met bin)
-	   HinvMass[bin]->Fill(mZ1,newwgt);   
-	 }
-
-	 if ( ((eventMask & zlljetsControlSampleGenLep.globalMask.back()) == zlljetsControlSampleGenLep.globalMask.back()) ) { 
- 
-	   HzlljetsInvMassMetBinGenLep[bin]->Fill(mZ1,newwgt); 
-
-	   //enter this part if 2 OS/SF leptons were found among gen and reco particles. Now checking compatibilities between pairs
-	   // e.g. l1gen = e+, l2gen = e- ; l1reco = e+, l2reco = e- (but the charge order might not coincide)
-	   // now we require a DeltaR cut between them to assess that lreco comes from lgen
-	   // since 2 OS/SF were found to get inside here, if !(l1gen->l1reco && l2gen->l2reco) then for sure l1gen->l2reco && l2gen->l1reco
-
-	   Double_t DeltaR_lreco_lgen_pair1 = 0.0;
-	   Double_t DeltaR_lreco_lgen_pair2 = 0.0;
-
-	   if(LepGood_pdgId[firstIndex] == GenPart_pdgId[firstIndexGen] && LepGood_pdgId[secondIndex] == GenPart_pdgId[secondIndexGen]) {
-
-	     DeltaR_lreco_lgen_pair1 = l1reco.DeltaR(l1gen);
-	     DeltaR_lreco_lgen_pair2 = l2reco.DeltaR(l2gen);
-
-	   } else {
-	    
-	     DeltaR_lreco_lgen_pair1 = l1reco.DeltaR(l2gen);
-	     DeltaR_lreco_lgen_pair2 = l2reco.DeltaR(l1gen);
-
-	   }
-
-	   if (DeltaR_lreco_lgen_pair1 < 0.1 && DeltaR_lreco_lgen_pair2 < 0.1) {
-	     
-	     HZtoLLRecoPt_MetBin[bin]->Fill(ZtoLLRecoPt,newwgt);
-	     HZtoLLGenPt_MetBin[bin]->Fill(ZtoLLGenPt,newwgt);
-	     if (ZtoLLGenPt != 0) HZtoLLPt_RecoGenRatio_pdf_MetBin[bin]->Fill(ZtoLLRecoPt/ZtoLLGenPt,newwgt);
-
-	   }
-
-	 }
-
-	 if ( ((eventMask & tautaubkgInZll.globalMask.back()) == tautaubkgInZll.globalMask.back()) ) {  
-	   HzlljetsInvMassMetBinGenTau[bin]->Fill(mZ1,newwgt);   
-	 }
-	 
-       }                      // end of    if ((metNoLepPt > metBinEdges[0]) && (metNoLepPt < metBinEdges[nMetBins])) 
+     }                      // end of    if ((metNoLepPt > metBinEdges[0]) && (metNoLepPt < metBinEdges[nMetBins])) 
        
    }                        // end of loop on entries
 
    
-   /************************************/
-   //                    MET|| & MET_|_ VS NVTX & ZpT
-   /************************************/
-
-   //resolution vs nvtx
-
-   Double_t xValues[NVTXS];
-   Double_t yValues[NVTXS];
-   Double_t yValuesErr[NVTXS];
-   for (Int_t i = 0; i < NVTXS; i++) {
-     xValues[i] = i + FIRST_NVTX;
-     yValues[i] = H_uPar_VS_Nvtx[i]->GetRMS();
-     yValuesErr[i] = H_uPar_VS_Nvtx[i]->GetRMSError();
-   }
-
-   TGraphErrors *GresolutionMetNoLepParZvsNvtx = new TGraphErrors(NVTXS,xValues,yValues,0,yValuesErr);
-   GresolutionMetNoLepParZvsNvtx->SetTitle("resolution || from histogram's RMS");
-   GresolutionMetNoLepParZvsNvtx->Draw("AP");
-   GresolutionMetNoLepParZvsNvtx->SetMarkerStyle(7);  // 7 is a medium dot
-   GresolutionMetNoLepParZvsNvtx->GetXaxis()->SetTitle("nvtx");
-   GresolutionMetNoLepParZvsNvtx->GetYaxis()->SetTitle("#sigma (u_{||}) [GeV]");
-   GresolutionMetNoLepParZvsNvtx->GetYaxis()->SetTitleOffset(1.4); 
-   GresolutionMetNoLepParZvsNvtx->SetName("gr_resolution_uPar_vs_Nvtx");
-   GresolutionMetNoLepParZvsNvtx->Write();
-
-   for (Int_t i = 0; i < NVTXS; i++) {
-     yValues[i] = H_uPerp_VS_Nvtx[i]->GetRMS();
-     yValuesErr[i] = H_uPerp_VS_Nvtx[i]->GetRMSError();
-   }
-
-   TGraphErrors *GresolutionMetNoLepOrtZvsNvtx = new TGraphErrors(NVTXS,xValues,yValues,0,yValuesErr);
-   GresolutionMetNoLepOrtZvsNvtx->SetTitle("resolution _|_ from histogram's RMS");
-   GresolutionMetNoLepOrtZvsNvtx->Draw("AP");
-   GresolutionMetNoLepOrtZvsNvtx->SetMarkerStyle(7);
-   GresolutionMetNoLepOrtZvsNvtx->GetXaxis()->SetTitle("nvtx");
-   GresolutionMetNoLepOrtZvsNvtx->GetYaxis()->SetTitle("#sigma (u_#perp ) [GeV]");
-   GresolutionMetNoLepOrtZvsNvtx->GetYaxis()->SetTitleOffset(1.4); 
-   GresolutionMetNoLepOrtZvsNvtx->SetName("gr_resolution_uPerp_vs_Nvtx");
-   GresolutionMetNoLepOrtZvsNvtx->Write();
-
-   // response curve
-
-   Double_t response[nBinsForResponse];
-   Double_t responseErr[nBinsForResponse];
-   Double_t meanZpt[nBinsForResponse];
-   Double_t meanZptErr[nBinsForResponse];
-
-   for (Int_t i = 0; i < nBinsForResponse; i++) {
-     meanZpt[i] = HZptBinned[i]->GetMean();
-     meanZptErr[i] = HZptBinned[i]->GetMeanError();
-     response[i] = H_uPar_ZpT_ratio[i]->GetMean();
-     responseErr[i] = H_uPar_ZpT_ratio[i]->GetMeanError();
-     //cout<<i<<" meanZpt = "<<meanZpt[i]<<" +/- "<<meanZptErr[i]<<"    response = "<<response[i]<<" +/- "<<responseErr[i]<<endl;
-   }
-
-   TGraphErrors *GresponseCurve = new TGraphErrors(nBinsForResponse,meanZpt,response,0,responseErr);
-   GresponseCurve->SetTitle("response curve");
-   GresponseCurve->Draw("AP");
-   GresponseCurve->SetMarkerStyle(7);    // 7 is a medium dot
-   GresponseCurve->GetXaxis()->SetTitle("ZpT [GeV]");
-   GresponseCurve->GetYaxis()->SetTitle(" < u_{||} / ZpT >");
-   GresponseCurve->GetYaxis()->SetRangeUser(0.6, 1.1);
-   GresponseCurve->GetYaxis()->SetTitleOffset(1.4); 
-   GresponseCurve->SetName("gr_responseCurve");
-   GresponseCurve->Write();
-
-   // resolution vs ZpT
-
-   Double_t resoMetNoLepParZvsZpt[nBinsForResponse];
-   Double_t resoMetNoLepParZvsZptErr[nBinsForResponse];
-   Double_t resoMetNoLepOrtZvsZpt[nBinsForResponse];
-   Double_t resoMetNoLepOrtZvsZptErr[nBinsForResponse];
-
-   for (Int_t i = 0; i < nBinsForResponse; i++) {
-     resoMetNoLepParZvsZpt[i] = H_uPar_VS_ZpT[i]->GetRMS();
-     resoMetNoLepParZvsZptErr[i] = H_uPar_VS_ZpT[i]->GetRMSError();
-     resoMetNoLepOrtZvsZpt[i] = H_uPerp_VS_ZpT[i]->GetRMS();
-     resoMetNoLepOrtZvsZptErr[i] = H_uPerp_VS_ZpT[i]->GetRMSError();
-   }
-
-   TGraphErrors *GresolutionMetNoLepParZvsZpt = new TGraphErrors(nBinsForResponse,meanZpt,resoMetNoLepParZvsZpt,0,resoMetNoLepParZvsZptErr);
-   GresolutionMetNoLepParZvsZpt->SetTitle("resolution || from histogram's RMS");
-   GresolutionMetNoLepParZvsZpt->Draw("AP");
-   GresolutionMetNoLepParZvsZpt->SetMarkerStyle(7);  // 7 is a medium dot
-   GresolutionMetNoLepParZvsZpt->GetXaxis()->SetTitle("Zpt [GeV]");
-   GresolutionMetNoLepParZvsZpt->GetYaxis()->SetTitle("#sigma (u_{||}) [GeV]");
-   GresolutionMetNoLepParZvsZpt->GetYaxis()->SetTitleOffset(1.2); 
-   GresolutionMetNoLepParZvsZpt->SetName("gr_resolution_uPar_vs_ZpT");
-   GresolutionMetNoLepParZvsZpt->Write();
-
-   TGraphErrors *GresolutionMetNoLepOrtZvsZpt = new TGraphErrors(nBinsForResponse,meanZpt,resoMetNoLepOrtZvsZpt,0,resoMetNoLepOrtZvsZptErr);
-   GresolutionMetNoLepOrtZvsZpt->SetTitle("resolution _|_ from histogram's RMS");
-   GresolutionMetNoLepOrtZvsZpt->Draw("AP");
-   GresolutionMetNoLepOrtZvsZpt->SetMarkerStyle(7);
-   GresolutionMetNoLepOrtZvsZpt->GetXaxis()->SetTitle("Zpt [GeV]");
-   GresolutionMetNoLepOrtZvsZpt->GetYaxis()->SetTitle("#sigma (u_#perp ) [GeV]");
-   GresolutionMetNoLepOrtZvsZpt->GetYaxis()->SetTitleOffset(1.2); 
-   GresolutionMetNoLepOrtZvsZpt->SetName("gr_resolution_uPerp_vs_ZpT");
-   GresolutionMetNoLepOrtZvsZpt->Write();
-
-   // end of TGraphs
-
-   mySpaces(cout,2);
-   selection::printSelectionFlowAndYields(cout, LUMI, nTotalWeightedEvents, &zlljetsControlSample);
-   selection::printSelectionFlowAndYields(cout, LUMI, nTotalWeightedEvents, &zlljetsControlSampleGenLep);
-   selection::printSelectionFlowAndYields(cout, LUMI, nTotalWeightedEvents, &tautaubkgInZll);
-   selection::printSelectionFlowAndYields(cout, LUMI, nTotalWeightedEvents, &resoAndResponse);
-   // for (Int_t i = 0; i < nMetBins; i++) {
-   //   selection::printSelectionFlowAndYields(cout, LUMI, nTotalWeightedEventsNoHLT, lep_acc_eff[i] );
-   // }
-
-   mySpaces(cout,2);
-   myPrintYieldsMetBinInStream(cout, HzlljetsYieldsMetBinGenLep, metBinEdges, nMetBins);
+   
  
    cout<<"creating file '"<<TXT_FNAME<<"' ..."<<endl;
    ofstream myfile(TXT_FNAME,ios::out);
@@ -1021,17 +588,6 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      exit(EXIT_FAILURE);
      
    }
-          
-   selection::printSelectionFlowAndYields(myfile, LUMI, nTotalWeightedEvents, &zlljetsControlSample);
-   selection::printSelectionFlowAndYields(myfile, LUMI, nTotalWeightedEvents, &zlljetsControlSampleGenLep);
-   selection::printSelectionFlowAndYields(myfile, LUMI, nTotalWeightedEvents, &tautaubkgInZll);
-   selection::printSelectionFlowAndYields(myfile, LUMI, nTotalWeightedEvents, &resoAndResponse);
-   mySpaces(myfile,2);
-   myPrintYieldsMetBinInStream(myfile, HzlljetsYieldsMetBinGenLep, metBinEdges, nMetBins);
-
-   TH1D *HevtPassMonoJetSel = new TH1D("HevtPassMonoJetSel","events passing monojet selection for A#times#epsilon",nMetBins,metBinEdges);
-   TH1D *HevtPassAccSel = new TH1D("HevtPassAccSel","events passing acceptance selection for A#times#epsilon",nMetBins,metBinEdges);
-   TH1D *HevtPassEffSel = new TH1D("HevtPassEffSel","events passing efficiency selection for A#times#epsilon",nMetBins,metBinEdges);
 
    // using [0] element to find step, all elements are equivalent for this purpose
    Int_t stepMonojetSelection_In_lepAccEff = lep_acc_eff[0]->whichStepHas(maskMonoJetSelection);
@@ -1040,12 +596,17 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
    // cout<<"step: MJ     acc     eff"<<endl;
    // cout<<stepMonojetSelection_In_lepAccEff<<stepAcceptance_In_lepAccEff<<stepEfficiency_In_lepAccEff<<endl;
    Double_t acc, eff, accStatErr, effStatErr, acceff, acceffStatErr;
+   Double_t acc_ht[HTbins], eff_ht[HTbins], accStatErr_ht[HTbins], effStatErr_ht[HTbins], acceff_ht[HTbins], acceffStatErr_ht[HTbins];
 
    mySpaces(cout,2);
    mySpaces(myfile,2);
    cout << "Printing acceptance and efficiency." << endl;
    cout << "MET [GeV]     acc     acc_unc     eff     eff_unc" <<endl;
    myfile << "MET [GeV]     acc     acc_unc     eff     eff_unc" <<endl;
+
+   TH1D *HevtPassMonoJetSel = new TH1D("HevtPassMonoJetSel","events passing monojet selection for A#times#epsilon",nMetBins,metBinEdges);
+   TH1D *HevtPassAccSel = new TH1D("HevtPassAccSel","events passing acceptance selection for A#times#epsilon",nMetBins,metBinEdges);
+   TH1D *HevtPassEffSel = new TH1D("HevtPassEffSel","events passing efficiency selection for A#times#epsilon",nMetBins,metBinEdges);
 
    for (Int_t i = 0; i < nMetBins; i++) {
   
@@ -1055,6 +616,22 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      HevtPassAccSel->SetBinError(      i+1,lep_acc_eff[i]->getEventsErr(stepAcceptance_In_lepAccEff));
      HevtPassEffSel->SetBinContent(    i+1,lep_acc_eff[i]->getEvents(stepEfficiency_In_lepAccEff));
      HevtPassEffSel->SetBinError(      i+1,lep_acc_eff[i]->getEventsErr(stepEfficiency_In_lepAccEff));
+
+     acc = lep_acc_eff[i]->nEvents[stepAcceptance_In_lepAccEff]/lep_acc_eff[i]->nEvents[stepMonojetSelection_In_lepAccEff];
+     eff = lep_acc_eff[i]->nEvents[stepEfficiency_In_lepAccEff]/lep_acc_eff[i]->nEvents[stepAcceptance_In_lepAccEff];
+     accStatErr = sqrt(acc * (1 - acc) / lep_acc_eff[i]->nEvents[stepMonojetSelection_In_lepAccEff]);
+     effStatErr = sqrt(eff * (1 - eff) / lep_acc_eff[i]->nEvents[stepAcceptance_In_lepAccEff]);
+     Hacc->SetBinContent(i+1,acc);
+     Hacc->SetBinError(i+1,accStatErr);
+     Heff->SetBinContent(i+1,eff);
+     Heff->SetBinError(i+1,effStatErr);
+
+     cout<<(Int_t)metBinEdges[i]<<"-"<<(Int_t)metBinEdges[i+1]<<" "<<acc<<" "<<accStatErr<<" "<<eff<<" "<<effStatErr<<endl;
+     myfile<<(Int_t)metBinEdges[i]<<"-"<<(Int_t)metBinEdges[i+1]<<" "<<acc<<" "<<accStatErr<<" "<<eff<<" "<<effStatErr<<endl;
+
+   }
+
+   for (Int_t i = 0; i < nMetBins; i++) {
 
      acc = lep_acc_eff[i]->nEvents[stepAcceptance_In_lepAccEff]/lep_acc_eff[i]->nEvents[stepMonojetSelection_In_lepAccEff];
      eff = lep_acc_eff[i]->nEvents[stepEfficiency_In_lepAccEff]/lep_acc_eff[i]->nEvents[stepAcceptance_In_lepAccEff];
@@ -1089,8 +666,6 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
   
    }
 
-   myfile.close();
-
    TEfficiency *Acceptance = new TEfficiency(*HevtPassAccSel,*HevtPassMonoJetSel);
    TEfficiency *Efficiency = new TEfficiency(*HevtPassEffSel,*HevtPassAccSel);
    TEfficiency *AccTimesEff = new TEfficiency(*HevtPassEffSel,*HevtPassMonoJetSel);
@@ -1106,31 +681,6 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
    grAE_Acc->Write("grAE_Acc");
    grAE_Eff->Write("grAE_Eff");
    grAE_AccTimesEff->Write("grAE_AccTimesEff");
-
-   // now get Z(inv) estimate as N_Zvv = N_Zll * R / (A*e), R being BR(Zvv)/BR(Zll) where l is either mu or e (R ~ 6)
-   TH1D *H_BR_ratio = new TH1D("H_BR_ratio",Form("BR(Z#nu#nu/BR(%s)",CONTROL_SAMPLE),nMetBins,metBinEdges);
-
-   for(Int_t i = 0; i <= nMetBins; i++) {
-     H_BR_ratio->SetBinContent(i,RATIO_BR_ZINV_ZLL);
-     H_BR_ratio->SetBinError(i,UNC_RATIO_BR_ZINV_ZLL);
-   }
-
-   HzvvEstimate->Multiply(HzlljetsYieldsMetBinGenLep,H_BR_ratio);
-   HzvvEstimate->Divide(Hacceff);
-   delete H_BR_ratio; //no need to save it
-
-   // I add overflow bin's content in the last bin for all histograms where that is needed
-   // for those histogram filled with Divide() method, it's not done as long as it was already done on the histograms given as
-   // argument to the Divide() method
-   myAddOverflowInLastBin(HZtoLLRecoPt);
-   myAddOverflowInLastBin(HZtoLLGenPt);  
-   HZtoLLPt_RecoGenRatio->Divide(HZtoLLRecoPt,HZtoLLGenPt);
-
-   for (Int_t i = 0; i < nMetBins; i++) {
-       myAddOverflowInLastBin(HZtoLLRecoPt_MetBin[i]);
-       myAddOverflowInLastBin(HZtoLLGenPt_MetBin[i]);
-       HZtoLLPt_RecoGenRatio_MetBin[i]->Divide(HZtoLLRecoPt_MetBin[i],HZtoLLGenPt_MetBin[i]);  
-   }
 
    rootFile->Write();
 
@@ -1148,12 +698,8 @@ void zlljets_Axe_noSkim::loop(const char* configFileName)
      myAddDefaultPackages(fp,TEX_FNAME);
      fprintf(fp,"\\begin{document}\n");
      fprintf(fp,"\n");
-     string commentInTable;       
-     //makeTableTex(fp, LUMI, nTotalWeightedEvents, &mu_Acc_Eff, commentInTable);      
+     string commentInTable;           
      commentInTable = "Note that cuts on second jet are applied only if a second jet exists with $p_t$ > 30\\,GeV.";
-     makeTableTex(fp, LUMI, nTotalWeightedEvents, &zlljetsControlSample,commentInTable);
-     makeTableTex(fp, LUMI, nTotalWeightedEvents, &zlljetsControlSampleGenLep,commentInTable);
-     makeTableTex(fp, LUMI, nTotalWeightedEvents, &tautaubkgInZll,commentInTable);
      fprintf(fp,"\\end{document}\n");      
      fclose(fp);
 
